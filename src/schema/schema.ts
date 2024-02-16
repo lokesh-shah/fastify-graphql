@@ -8,6 +8,9 @@ type User {
 type Event {
     id:ID!
     summary: String!
+    description: String!
+    start:String!
+    end:String!
 }
 
 type Person {
@@ -25,6 +28,6 @@ type Query{
 
 
 type Mutation {
-  createGoogleEvent(summary: String!, description: String!, start: String!, end: String!): String!
+  createGoogleEvent(summary: String!, description:String!, start: String!, end: String!): Event!
 }
 `;

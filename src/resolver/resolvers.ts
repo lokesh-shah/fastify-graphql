@@ -1,6 +1,5 @@
 import { google } from "googleapis";
 import { oauth2Client } from "../Services/commonService";
-import dayjs from "dayjs";
 
 const getData = () => {
     return [
@@ -12,6 +11,16 @@ const getData = () => {
 
 const calendarService = google.calendar({ version: 'v3', auth: oauth2Client });
 const peopleService = google.people({ version: 'v1', auth: oauth2Client });
+
+const formatGoogleCalendarEvent = (data: any) => { 
+    return {
+        id: data.id,
+        summary: data.summary,
+        description: data.description,
+        start: data.start.dateTime,
+        end: data.end.dateTime,
+    };
+};
 
 export const resolvers = {
     ///************** Query  **************/
@@ -35,7 +44,10 @@ export const resolvers = {
 
                 return data?.items?.map((event: any) => ({
                     id: event?.id || '',
-                    summary: event?.summary || ''
+                    summary: event?.summary || '',
+                    description:event?.description || '',
+                    start: event?.start?.dateTime || '',
+                    end: event?.end?.dateTime || ''
                 }));
 
             } catch (error: any) {
@@ -65,25 +77,33 @@ export const resolvers = {
 
     },
     ///************** mutation  **************/
+
     Mutation: {
-        createGoogleEvent: async (_: any, { summary, description, start, end }: { summary: any, description: any, start: any, end: any }) => {
-            await calendarService.events.insert({
-                calendarId: process.env.CALENDAR_ID,
-                auth: oauth2Client,
-                requestBody: {
+        createGoogleEvent: async (_: any, { summary, description, start, end }: any, context: any) => {
+            try {
+                const event = {
                     summary,
                     description,
                     start: {
-                        dateTime: dayjs(start).toISOString(),
-                        timeZone: "Asia/Kolkata",
+                        dateTime: start,
+                        timeZone: 'Asia/Kolkata',
                     },
                     end: {
-                        dateTime: dayjs(end).toISOString(),
-                        timeZone: "Asia/Kolkata",
+                        dateTime: end,
+                        timeZone: 'Asia/Kolkata',
                     },
-                },
-            });
-            return "Event created successfully!";
-        },
+                };
+
+                const response = await calendarService.events.insert({
+                    calendarId: process.env.CALENDAR_ID,
+                    requestBody: event,
+                });
+
+                return formatGoogleCalendarEvent(response.data);
+            } catch (error) {
+                console.error("Error adding event: ", error);
+                throw new Error("Failed to add event");
+            }
+        }
     },
 };
