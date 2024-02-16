@@ -12,14 +12,23 @@ const getData = () => {
 const calendarService = google.calendar({ version: 'v3', auth: oauth2Client });
 const peopleService = google.people({ version: 'v1', auth: oauth2Client });
 
-const formatGoogleCalendarEvent = (data: any) => { 
+const formatGoogleCalendarEvent = (data: any) => {
     return {
-        id: data.id,
-        summary: data.summary,
-        description: data.description,
-        start: data.start.dateTime,
-        end: data.end.dateTime,
+        id: data.id || '',
+        summary: data.summary || '',
+        description: data.description || '',
+        start: data.start.dateTime || '',
+        end: data.end.dateTime || '',
     };
+};
+
+const formattedContact = (createdContact: any) => {
+    return {
+        resourceName: createdContact?.resourceName || '',
+        names: createdContact?.names ? createdContact.names.map((name: any) => name.displayName).toString() : '',
+        emailAddresses: createdContact?.emailAddresses ? createdContact?.emailAddresses?.map((email: any) => email.value).toString() : '',
+        phoneNumbers: createdContact?.phoneNumbers ? createdContact?.phoneNumbers?.map((phone: any) => phone.value).toString() : ''
+    }
 };
 
 export const resolvers = {
@@ -45,7 +54,7 @@ export const resolvers = {
                 return data?.items?.map((event: any) => ({
                     id: event?.id || '',
                     summary: event?.summary || '',
-                    description:event?.description || '',
+                    description: event?.description || '',
                     start: event?.start?.dateTime || '',
                     end: event?.end?.dateTime || ''
                 }));
@@ -59,16 +68,18 @@ export const resolvers = {
                 const res = await peopleService.people.connections.list({
                     resourceName: 'people/me',
                     pageSize: 10,
-                    personFields: 'names,emailAddresses',
+                    personFields: 'names,emailAddresses,phoneNumbers',
                 });
 
-                return res?.data?.connections?.map((people: any) =>
-                ({
-                    resourceName: people?.resourceName,
-                    name: people.names ? people.names.map((name: any) => name.displayName).toString() : '',
-                    emailAddress: people.emailAddresses ? people.emailAddresses.map((email: any) => email.value).toString() : '',
 
-                }));
+                return res?.data?.connections?.map((people: any) => {
+                    return ({
+                        resourceName: people?.resourceName,
+                        names: people?.names ? people.names.map((name: any) => name.displayName).toString() : '',
+                        emailAddresses: people?.emailAddresses ? people?.emailAddresses?.map((email: any) => email.value).toString() : '',
+                        phoneNumbers: people?.phoneNumbers ? people?.phoneNumbers?.map((phone: any) => phone.value).toString() : ''
+                    })
+                });
 
             } catch (error: any) {
                 console.error('Error fetching people contacts:', error);
@@ -103,6 +114,30 @@ export const resolvers = {
             } catch (error) {
                 console.error("Error adding event: ", error);
                 throw new Error("Failed to add event");
+            }
+        },
+
+        createNewContact: async (_: any, { names, emailAddresses, phoneNumbers }: any) => {
+            try {
+                const contactData = {
+                    names: [{
+                        displayName: names,
+                        givenName: names,
+                        displayNameLastFirst: names,
+                        unstructuredName: names
+                    }],
+                    emailAddresses: [{ value: emailAddresses }],
+                    phoneNumbers: [{ value: phoneNumbers }],
+                };
+
+                const response = await peopleService.people.createContact({
+                    requestBody: contactData,
+                });
+
+                return formattedContact(response.data);
+            } catch (error) {
+                console.error("Error adding new contact: ", error);
+                throw new Error("Failed to add Contact");
             }
         }
     },

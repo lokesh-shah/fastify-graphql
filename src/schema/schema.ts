@@ -14,9 +14,10 @@ type Event {
 }
 
 type Person {
-    resourceName:String!
-    name:String!
-    emailAddress:String!
+    resourceName:ID!
+    names:String!
+    emailAddresses:String!
+    phoneNumbers:String!
 }
 
 type Query{
@@ -29,5 +30,6 @@ type Query{
 
 type Mutation {
   createGoogleEvent(summary: String!, description:String!, start: String!, end: String!): Event!
+  createNewContact(names:String!, emailAddresses:String!, phoneNumbers:String!): Person!
 }
 `;
