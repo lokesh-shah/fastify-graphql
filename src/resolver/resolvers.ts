@@ -27,7 +27,15 @@ const formattedContact = (createdContact: any) => {
         resourceName: createdContact?.resourceName || '',
         names: createdContact?.names ? createdContact.names.map((name: any) => name.displayName).toString() : '',
         emailAddresses: createdContact?.emailAddresses ? createdContact?.emailAddresses?.map((email: any) => email.value).toString() : '',
-        phoneNumbers: createdContact?.phoneNumbers ? createdContact?.phoneNumbers?.map((phone: any) => phone.value).toString() : ''
+        phoneNumbers: createdContact?.phoneNumbers ? createdContact?.phoneNumbers?.map((phone: any) => {
+            if (phone.value.length !== 10) {
+                return "length is not valid"
+            }
+            else {
+                return (phone.value).toString()
+            }
+        }
+        ).toString() : ''
     }
 };
 
@@ -45,7 +53,6 @@ export const resolvers = {
                 const { data } = await calendarService.events.list({
                     calendarId: process.env.CALENDAR_ID,
                     timeMin: new Date().toISOString(),
-                    maxResults: 10,
                     singleEvents: true,
                     orderBy: 'startTime',
                     auth: oauth2Client,
